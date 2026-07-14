@@ -3,7 +3,6 @@ import os
 import io
 import re
 import zipfile
-import rarfile
 import datetime
 import tempfile
 import shutil
