@@ -123,7 +123,6 @@ def extract_files_from_uploads(uploaded_files, progress_bar, status_text):
     total_files = len(uploaded_files)
     
     for idx, uploaded_file in enumerate(uploaded_files):
-        # PERBAIKAN: Progress harus antara 0.0 dan 1.0
         progress_val = min(1.0, float(idx) / float(total_files)) if total_files > 0 else 0.0
         progress_bar.progress(progress_val)
         status_text.text(f"📂 Memproses file {idx + 1}/{total_files}: {uploaded_file.name}")
@@ -229,7 +228,6 @@ def process_images_to_excel(groups, separate_files, progress_bar, status_text, l
             current_row += 1
             global_idx += 1
             
-            # PERBAIKAN: Progress harus antara 0.0 dan 1.0
             progress_val = min(1.0, float(global_idx) / float(total_items)) if total_items > 0 else 0.0
             progress_bar.progress(progress_val)
             
@@ -260,6 +258,12 @@ def process_images_to_excel(groups, separate_files, progress_bar, status_text, l
 # UI STREAMLIT
 # ==========================================
 def main():
+    # Inisialisasi session state untuk menyimpan hasil
+    if 'excel_files' not in st.session_state:
+        st.session_state.excel_files = None
+    if 'processing_done' not in st.session_state:
+        st.session_state.processing_done = False
+    
     st.title("📊 Excel Image & Email Extractor")
     st.markdown("---")
     
@@ -298,9 +302,50 @@ def main():
             start_btn = st.button("🚀 Mulai Proses OCR", type="primary", use_container_width=True)
         with col2:
             if st.button("🗑️ Reset", use_container_width=True):
+                st.session_state.excel_files = None
+                st.session_state.processing_done = False
                 st.rerun()
         
-        if start_btn:
+        # Tampilkan hasil dari session state jika sudah ada
+        if st.session_state.processing_done and st.session_state.excel_files:
+            excel_files = st.session_state.excel_files
+            
+            st.markdown("---")
+            st.success("✅ **Proses Selesai!** Download file Excel Anda:")
+            
+            if separate_mode:
+                st.subheader("📥 Download File Excel (Terpisah)")
+                for filename, file_bytes in excel_files:
+                    st.download_button(
+                        label=f"📄 Download {filename}",
+                        data=file_bytes,
+                        file_name=filename,
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True,
+                        key=f"download_{filename}"  # Unique key untuk setiap tombol
+                    )
+            else:
+                st.subheader("📥 Download File Excel (Gabungan)")
+                st.download_button(
+                    label="📄 Download Combined_Output.xlsx",
+                    data=excel_files[0][1],
+                    file_name="Combined_Output.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True,
+                    key="download_combined"
+                )
+            
+            # Statistik
+            total_images = sum(len(g['items']) for g in st.session_state.groups)
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Gambar", total_images)
+            with col2:
+                st.metric("File Excel", len(excel_files))
+            with col3:
+                st.metric("Error/Warning", st.session_state.errors if st.session_state.errors else 0)
+        
+        elif start_btn:
             progress_bar = st.progress(0.0)
             status_text = st.empty()
             log_area = st.empty()
@@ -322,37 +367,14 @@ def main():
                 )
                 
                 if excel_files:
-                    st.markdown("---")
-                    st.success("✅ **Proses Selesai!** Download file Excel Anda:")
+                    # Simpan ke session state
+                    st.session_state.excel_files = excel_files
+                    st.session_state.processing_done = True
+                    st.session_state.groups = groups
+                    st.session_state.errors = errors
                     
-                    if separate_mode:
-                        st.subheader("📥 Download File Excel (Terpisah)")
-                        for filename, file_bytes in excel_files:
-                            st.download_button(
-                                label=f"📄 Download {filename}",
-                                data=file_bytes,
-                                file_name=filename,
-                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                use_container_width=True
-                            )
-                    else:
-                        st.subheader("📥 Download File Excel (Gabungan)")
-                        st.download_button(
-                            label="📄 Download Combined_Output.xlsx",
-                            data=excel_files[0][1],
-                            file_name="Combined_Output.xlsx",
-                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                            use_container_width=True
-                        )
-                    
-                    total_images = sum(len(g['items']) for g in groups)
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Total Gambar", total_images)
-                    with col2:
-                        st.metric("File Excel", len(excel_files))
-                    with col3:
-                        st.metric("Error/Warning", errors if errors else 0)
+                    # Rerun untuk menampilkan hasil
+                    st.rerun()
             else:
                 st.warning("⚠️ Tidak ada gambar yang bisa diproses.")
     else:
