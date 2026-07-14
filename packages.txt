@@ -1,2 +1,4 @@
-tesseract-ocr
-unrar
+   streamlit
+   openpyxl
+   Pillow
+   pytesseract
