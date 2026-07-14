@@ -154,21 +154,6 @@ def extract_files_from_uploads(uploaded_files, progress_bar, status_text):
                             except:
                                 pass
                                 
-            elif file_ext == '.rar':
-                # Proses file RAR
-                with rarfile.RarFile(uploaded_file, 'r') as r:
-                    for entry in sorted(r.infolist(), key=lambda x: x.filename):
-                        fn = entry.filename
-                        if fn.lower().endswith(exts):
-                            try:
-                                dt = datetime.datetime(*entry.date_time[:6])
-                                items.append({
-                                    'name': fn,
-                                    'bytes': r.read(fn),
-                                    'date': format_date_indonesian(dt)
-                                })
-                            except:
-                                pass
             else:
                 # File gambar langsung
                 if file_ext in exts:
@@ -302,7 +287,7 @@ def main():
     st.subheader("📤 Upload File")
     uploaded_files = st.file_uploader(
         "Pilih file ZIP, RAR, atau gambar (bisa multiple)",
-        type=['zip', 'rar', 'jpg', 'jpeg', 'png', 'bmp', 'gif'],
+        type=['zip', 'jpg', 'jpeg', 'png', 'bmp', 'gif'],
         accept_multiple_files=True
     )
     
