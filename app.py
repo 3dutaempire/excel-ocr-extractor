@@ -275,7 +275,7 @@ def main():
         
         separate_mode = st.checkbox(
             "📁 Pisahkan file Excel per ZIP/RAR",
-            value=False,
+            value=True,
             help="Aktifkan untuk membuat file Excel terpisah untuk setiap file ZIP/RAR"
         )
         
